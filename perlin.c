@@ -37,33 +37,31 @@ float cosineInterpolate(float x0, float x1, float mu) {
 
 
 
-void generateSmoothNoise(float *aBaseNoise, int nLength, float *aSmoothNoise, int nOctaveCount) {
-	int w = nLength;
-	int h = nLength;
-
+float *generateSmoothNoise(float *aBaseNoise, int nLength, int nOctaveCount) {
+	float *aSmoothNoise = (float *)malloc(nLength * nLength * sizeof(float)); 
 	int nSamplePeriod = 1 << nOctaveCount;
 	float fSampleFreq = 1 / (float)nSamplePeriod;
 	int xs0, xs1, ys0, ys1;
 	float hBlend, vBlend, fTop, fBottom;
 	int x, y;
 	int bny0, bny1;
-	for (y = 0; y < h; ++y) {
+	for (y = 0; y < nLength; ++y) {
 		ys0 = y - (y % nSamplePeriod);
-		ys1 = (ys0 + nSamplePeriod) % h;
+		ys1 = (ys0 + nSamplePeriod) % nLength;
 		hBlend = (float)(y - ys0) * fSampleFreq;
 		bny0 = ys0 * nLength;
 		bny1 = ys1 * nLength;
-		for (x = 0; x < w; ++ x) {
+		for (x = 0; x < nLength; ++x) {
 			xs0 = x - (x % nSamplePeriod);
-			xs1 = (xs0 + nSamplePeriod) % w;
+			xs1 = (xs0 + nSamplePeriod) % nLength;
 			vBlend = (x - xs0) * fSampleFreq;
 			fTop = cosineInterpolate(aBaseNoise[bny0 + xs0], aBaseNoise[bny1 + xs0], hBlend);
 			fBottom = cosineInterpolate(aBaseNoise[bny0 + xs1], aBaseNoise[bny1 + xs1], hBlend);
 			aSmoothNoise[y * nLength + x] = cosineInterpolate(fTop, fBottom, vBlend);
 		}
 	}
+	return aSmoothNoise;
 }
-
 
 
 /**
@@ -71,15 +69,16 @@ void generateSmoothNoise(float *aBaseNoise, int nLength, float *aSmoothNoise, in
  * @param aBaseNoise {*} a 2d array of values
  * @returns {[]}
  */
-void generatePerlinNoise(float *aBaseNoise, int nLength, float *aPerlinNoise) {
+float *generatePerlinNoise(float *aBaseNoise, int nLength) {
 	int nOctaveCount = computeOptimalOctaves(nLength);
 	float **aSmoothNoise = (float **)malloc(nOctaveCount * sizeof(float *));
 	float fPersist = 0.5;
 
 	for (int i = 0; i < nOctaveCount; ++i) {
-		aSmoothNoise[i] = (float *)malloc(nLength * nLength * sizeof(float));
-		generateSmoothNoise(aBaseNoise, nLength, aSmoothNoise[i], i);
+		aSmoothNoise[i] = generateSmoothNoise(aBaseNoise, nLength, i);
 	}
+	
+	float *aPerlinNoise = (float *)malloc(nLength * nLength * sizeof(float));
 
 	float fAmplitude = 1;
 	float fTotalAmp = 0;
@@ -111,8 +110,10 @@ void generatePerlinNoise(float *aBaseNoise, int nLength, float *aPerlinNoise) {
 			aPerlinNoise[pny + x] /= fTotalAmp;
 		}
 	}
+
 	for (int i = 0; i < nOctaveCount; ++i) {
 		free(aSmoothNoise[i]);
 	}
 	free(aSmoothNoise);
+	return aPerlinNoise;
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 emcc perlin.c -o perlin-wasm.html \
--s EXPORTED_FUNCTIONS='["_computeOptimalOctaves", "_generatePerlinNoise"]' \
+-s EXPORTED_FUNCTIONS='["_generatePerlinNoise"]' \
 -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
 -s WASM=1
 

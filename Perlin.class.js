@@ -81,11 +81,11 @@ class Perlin {
 		let x, y, r;
 
 		for (y = 0; y < h; ++y) {
-			r = [];
-			for (x = 0; x < w; ++x) {
-				r[x] = 0;
-			}
-			aPerlinNoise[y] = r;
+//			r = [];
+//			for (x = 0; x < w; ++x) {
+//				r[x] = 0;
+//			}
+			aPerlinNoise[y] = [];
 		}
 
 		for (let iOctave = nOctaveCount - 1; iOctave >= 0; --iOctave) {
@@ -96,7 +96,7 @@ class Perlin {
 				let snoy = sno[y];
 				let pny = aPerlinNoise[y];
 				for (x = 0; x < w; ++x) {
-					pny[x] += snoy[x] * fAmplitude;
+					pny[x] = (pny[x] || 0) + snoy[x] * fAmplitude;
 				}
 			} 
 		}
