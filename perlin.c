@@ -1,5 +1,6 @@
 #include <math.h>
 #include <malloc.h>
+#include <stdio.h>
 
 
 #define PI 3.14159265
@@ -72,15 +73,11 @@ void generateSmoothNoise(float *aBaseNoise, int nLength, float *aSmoothNoise, in
  */
 void generatePerlinNoise(float *aBaseNoise, int nLength, float *aPerlinNoise) {
 	int nOctaveCount = computeOptimalOctaves(nLength);
-	int w = nLength;
-	int h = nLength;
-
 	float **aSmoothNoise = (float **)malloc(nOctaveCount * sizeof(float *));
-
 	float fPersist = 0.5;
 
 	for (int i = 0; i < nOctaveCount; ++i) {
-		aSmoothNoise[i] = (float *)malloc(nLength * sizeof(float));
+		aSmoothNoise[i] = (float *)malloc(nLength * nLength * sizeof(float));
 		generateSmoothNoise(aBaseNoise, nLength, aSmoothNoise[i], i);
 	}
 
@@ -88,34 +85,32 @@ void generatePerlinNoise(float *aBaseNoise, int nLength, float *aPerlinNoise) {
 	float fTotalAmp = 0;
 	int x, y, r;
 
-	for (y = 0; y < h; ++y) {
+	for (y = 0; y < nLength; ++y) {
 		r = y * nLength;
-		for (x = 0; x < w; ++x) {
+		for (x = 0; x < nLength; ++x) {
 			aPerlinNoise[r + x] = 0;
 		}
 	}
 
-	float *sno = aSmoothNoise[0];
-	int snoy, pny;
+	float *sno;
+	int snoy, pny, row;
 	for (int iOctave = nOctaveCount - 1; iOctave >= 0; --iOctave) {
 		fAmplitude *= fPersist;
 		fTotalAmp += fAmplitude;
 		sno = aSmoothNoise[iOctave];
-		for (y = 0; y < h; ++y) {
-			snoy = y * nLength;
-			pny = y * nLength;
-			for (x = 0; x < w; ++x) {
-				aPerlinNoise[pny + x] += sno[snoy + x] * fAmplitude;
+		for (y = 0; y < nLength ; ++y) {
+			row = y * nLength;
+			for (x = 0; x < nLength; ++x) {
+				aPerlinNoise[row + x] += sno[row + x] * fAmplitude;
 			}
 		} 
 	}
-	for (y = 0; y < h; ++y) {
+	for (y = 0; y < nLength; ++y) {
 		pny = y * nLength;
-		for (x = 0; x < w; ++x) {
+		for (x = 0; x < nLength; ++x) {
 			aPerlinNoise[pny + x] /= fTotalAmp;
 		}
 	}
-
 	for (int i = 0; i < nOctaveCount; ++i) {
 		free(aSmoothNoise[i]);
 	}

@@ -23,17 +23,17 @@ function createFunctions() {
 	return function generatePerlinNoise(aNoise) {
 		const nLength = aNoise.length;
 		const inputArray = aNoise.reduce((prev, curr) => prev.concat(curr), []);
-		const outputArray = (new Array(nLength)).fill(0);
+		const outputArray = (new Array(nLength * nLength)).fill(0);
 		const inputHeapBytes = _arrayToHeap(new Float32Array(inputArray));
 		const outputHeapBytes = _arrayToHeap(new Float32Array(outputArray));
 		const ret = Module.ccall('generatePerlinNoise', 'number',['number', 'number', 'number'], [inputHeapBytes.byteOffset, nLength, outputHeapBytes.byteOffset]);
-		const aOutputLinear = [...outputHeapBytes];
+		const aOutputLinear = new Float32Array(outputHeapBytes.buffer);
 		_freeArray(inputHeapBytes);
 		_freeArray(outputHeapBytes);
 		
 		const chunks = [];
 		for (let i = 0, j = aOutputLinear.length; i < j; i += nLength) {
-			chunks.push(aOutputLinear.slice(i, i + chunkCount)); 
+			chunks.push(aOutputLinear.slice(i, i + nLength)); 
 		}
 
 		return chunks;
@@ -55,38 +55,37 @@ function create2DArray(nLength, cb) {
 	return o;
 }
 
+function buildCanvas(aData) {
+	const canvas = document.createElement('canvas');
+	canvas.width = canvas.height = aData.length;
+	const context = canvas.getContext('2d');
+	aData.forEach((row, y) => row.forEach((cell, x) => {
+		const nComp = cell * 255 | 0;
+		context.fillStyle = 'rgb(' + [nComp, nComp, nComp].join(',') + ')';
+		context.fillRect(x, y, 1, 1);
+	}));
+	return canvas;
+}
+
 
 function runTests() {
 	let a, b;
 	const aInput = create2DArray(256, (x, y) => Math.random());
 	console.time('Perlin normal');
 	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
-	Perlin.generate(aInput, 8);
 	a = Perlin.generate(aInput, 8);
 	console.timeEnd('Perlin normal');
+	
+	
 	const wasmPerlin = createFunctions();
+	
 	console.time('Perlin asm')
 	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
-	wasmPerlin(aInput);
 	b = wasmPerlin(aInput);
-	console.timeEnd('Perlin asm')
+	console.timeEnd('Perlin asm');
+	console.log(b);
+	document.body.appendChild(buildCanvas(a));
+	document.body.appendChild(buildCanvas(b));
 }
 
 
